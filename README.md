@@ -1,43 +1,40 @@
-# 🏗️ ETL Pipeline — Snowflake Data Warehouse
+# ETL Pipeline — Snowflake Data Warehouse
 
-This is a full ETL pipeline I built to move data from a MariaDB database into Snowflake. I used the Sakila movie rental database as the source — it has customers, films, rentals, and payment data which made it a good real-world-ish dataset to work with.
+I built this pipeline to move data from a MariaDB database into Snowflake. I used the Sakila movie rental database as the source since it has a good mix of tables — customers, films, rentals, and payments.
 
-## ⚙️ How it works
+## How it works
 
-The pipeline runs in three stages:
+The pipeline runs in three steps.
 
-**1. Extract 📤**
-`extract.py` connects to MariaDB using SQLAlchemy, pulls all four tables, and saves them as compressed gzip CSV files locally.
+First, `extract.py` connects to MariaDB using SQLAlchemy, pulls all four tables, and saves them as compressed gzip CSV files locally.
 
-**2. Load to Raw 🗃️**
-`load_raw.py` takes those files, uploads them to a Snowflake internal stage with a PUT command, and loads them into the RAW schema using COPY INTO.
+Second, `load_raw.py` uploads those files to a Snowflake internal stage using a PUT command and loads them into the RAW schema with COPY INTO.
 
-**3. Stage → Data Warehouse 🏛️**
-Data moves through a staging layer where it gets cleaned and keyed, then lands in the final DWH schema with proper dimension and fact tables.
+Third, the data moves through a staging layer where it gets cleaned and keyed, then lands in the final DWH schema with dimension and fact tables ready for reporting.
 
-I structured Snowflake into 3 schemas: `DW_RAW` → `DW_STAGE` → `DW_DWH`.
+I structured Snowflake into three schemas: DW_RAW for raw data, DW_STAGE for cleaned data with surrogate keys, and DW_DWH for the final tables.
 
-## 🧠 Things I was careful about
+## Things I was careful about
 
-- Auto-generated surrogate keys using Snowflake sequences so every record has a unique ID
-- Change tracking logic so existing records get updated instead of duplicated
-- Deduplication checks so re-running the pipeline is safe and won't add extra rows
-- All credentials stored in a `.env` file — nothing hardcoded 🔒
+- Used Snowflake sequences to auto-generate surrogate keys so every record has a unique ID
+- Added change tracking logic so existing records get updated instead of duplicated
+- Built in deduplication checks so re-running the pipeline is safe
+- Stored all credentials in a `.env` file, nothing hardcoded
 
-## 📂 Files
+## Files
 
-- `extract.py` — pulls data from MariaDB, saves as gzip CSV
-- `load_raw.py` — uploads to Snowflake stage, loads RAW tables
-- `load_stage.py` — transforms and loads into STAGE layer
-- `load_dw.py` — merges into final dimension and fact tables
-- `etl_script.sql` — full DDL: schemas, tables, file formats, sequences
-- `ETL_PROCESS.ipynb` — step-by-step walkthrough notebook 📓
+- `extract.py` - connects to MariaDB and saves tables as gzip CSV
+- `load_raw.py` - uploads files to Snowflake stage and loads RAW tables
+- `load_stage.py` - transforms and loads data into the STAGE layer
+- `load_dw.py` - merges data into final dimension and fact tables
+- `etl_script.sql` - full DDL for all schemas, tables, file formats, and sequences
+- `ETL_PROCESS.ipynb` - step-by-step walkthrough notebook
 
-## 🚀 Run it yourself
+## How to run
 
-You'll need a MariaDB instance with the Sakila dataset and a Snowflake account.
+You need a MariaDB instance with the Sakila dataset and a Snowflake account.
 
-1. Clone the repo and create a `.env` file:
+1. Clone the repo and create a `.env` file in the root:
 ```
 MR_DB_HOST=your_mariadb_host
 MR_DB_NAME=sakila
@@ -50,8 +47,8 @@ SF_WAREHOUSE=COMPUTE_WH
 SF_DATABASE=SAKILA_DW
 SF_ROLE=your_role
 ```
-2. Run `etl_script.sql` in Snowflake first to set up all schemas and tables
-3. Then run in order:
+2. Run `etl_script.sql` in Snowflake first to create all schemas and tables
+3. Then run the scripts in order:
 ```bash
 python extract.py
 python load_raw.py
@@ -59,7 +56,7 @@ python load_stage.py
 python load_dw.py
 ```
 
-Check `ETL_PROCESS.ipynb` for a full walkthrough of what each step is doing under the hood.
+The `ETL_PROCESS.ipynb` notebook walks through each step in detail if you want to understand what is happening at every stage.
 
-## ⚙️ Stack
-Python · SQL · SQLAlchemy · pandas · Snowflake · MariaDB · python-dotenv
+## Stack
+Python, SQL, SQLAlchemy, pandas, Snowflake, MariaDB, python-dotenv
