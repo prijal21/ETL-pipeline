@@ -1,28 +1,65 @@
-# ETL Pipeline — Snowflake Data Warehouse
+# 🏗️ ETL Pipeline — Snowflake Data Warehouse
 
-This is an ETL pipeline I built to move data from a MariaDB database into Snowflake. The source is the Sakila movie rental database which has tables for customers, films, rentals, and payments.
+This is a full ETL pipeline I built to move data from a MariaDB database into Snowflake. I used the Sakila movie rental database as the source — it has customers, films, rentals, and payment data which made it a good real-world-ish dataset to work with.
 
-## How it works
+## ⚙️ How it works
 
-The pipeline runs in three steps. First, `extract.py` connects to MariaDB using SQLAlchemy, pulls the four tables, and saves each one as a compressed gzip CSV file. Second, `load_raw.py` uploads those files to a Snowflake internal stage using a PUT command and then loads them into the RAW schema with COPY INTO. Third, the data moves through a staging layer before landing in the final data warehouse schema.
+The pipeline runs in three stages:
 
-I structured Snowflake into three schemas: DW_RAW for the raw data, DW_STAGE for cleaned and keyed data, and DW_DWH for the final tables used for reporting.
+**1. Extract 📤**
+`extract.py` connects to MariaDB using SQLAlchemy, pulls all four tables, and saves them as compressed gzip CSV files locally.
 
-## A few things I paid attention to
+**2. Load to Raw 🗃️**
+`load_raw.py` takes those files, uploads them to a Snowflake internal stage with a PUT command, and loads them into the RAW schema using COPY INTO.
 
-- Used Snowflake sequences to auto-generate surrogate keys for each record
-- Added logic to track changes over time so old records aren't just overwritten
-- Built in duplicate prevention so re-running the pipeline doesn't create extra rows
-- Stored all credentials in environment variables using python-dotenv
+**3. Stage → Data Warehouse 🏛️**
+Data moves through a staging layer where it gets cleaned and keyed, then lands in the final DWH schema with proper dimension and fact tables.
 
-## Files
+I structured Snowflake into 3 schemas: `DW_RAW` → `DW_STAGE` → `DW_DWH`.
 
-- `extract.py` - pulls data from MariaDB and saves as gzip CSV
-- `load_raw.py` - uploads to Snowflake stage and loads RAW tables
-- `load_stage.py` - loads and transforms into the STAGE layer
-- `load_dw.py` - merges data into final dimension and fact tables
-- `etl_script.sql` - full DDL for all schemas, tables, file formats, and sequences
-- `ETL_PROCESS.ipynb` - walkthrough notebook
+## 🧠 Things I was careful about
 
-## Stack
-Python, SQL, SQLAlchemy, pandas, Snowflake, MariaDB, python-dotenv
+- Auto-generated surrogate keys using Snowflake sequences so every record has a unique ID
+- Change tracking logic so existing records get updated instead of duplicated
+- Deduplication checks so re-running the pipeline is safe and won't add extra rows
+- All credentials stored in a `.env` file — nothing hardcoded 🔒
+
+## 📂 Files
+
+- `extract.py` — pulls data from MariaDB, saves as gzip CSV
+- `load_raw.py` — uploads to Snowflake stage, loads RAW tables
+- `load_stage.py` — transforms and loads into STAGE layer
+- `load_dw.py` — merges into final dimension and fact tables
+- `etl_script.sql` — full DDL: schemas, tables, file formats, sequences
+- `ETL_PROCESS.ipynb` — step-by-step walkthrough notebook 📓
+
+## 🚀 Run it yourself
+
+You'll need a MariaDB instance with the Sakila dataset and a Snowflake account.
+
+1. Clone the repo and create a `.env` file:
+```
+MR_DB_HOST=your_mariadb_host
+MR_DB_NAME=sakila
+MR_DB_USER=your_user
+MR_DB_PASSWORD=your_password
+SF_USER=your_snowflake_user
+SF_PASSWORD=your_snowflake_password
+SF_ACCOUNT=your_snowflake_account
+SF_WAREHOUSE=COMPUTE_WH
+SF_DATABASE=SAKILA_DW
+SF_ROLE=your_role
+```
+2. Run `etl_script.sql` in Snowflake first to set up all schemas and tables
+3. Then run in order:
+```bash
+python extract.py
+python load_raw.py
+python load_stage.py
+python load_dw.py
+```
+
+Check `ETL_PROCESS.ipynb` for a full walkthrough of what each step is doing under the hood.
+
+## ⚙️ Stack
+Python · SQL · SQLAlchemy · pandas · Snowflake · MariaDB · python-dotenv
